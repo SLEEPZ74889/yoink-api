@@ -8,7 +8,10 @@ import (
 	"net/http"
 
 	"github.com/SLEEPZ74889/yoink-api/internal/db"
+	"github.com/SLEEPZ74889/yoink-api/internal/handler"
+	"github.com/SLEEPZ74889/yoink-api/internal/repository"
 	"github.com/SLEEPZ74889/yoink-api/internal/router"
+	"github.com/SLEEPZ74889/yoink-api/internal/service"
 	"github.com/joho/godotenv"
 )
 
@@ -29,7 +32,12 @@ func main() {
 	defer conn.Close(context.Background())
 	fmt.Println("Successfully connected to the database")
 
-	r := router.New()
+	linkRepo := repository.NewLinkRepository(conn)
+	linkService := service.NewLinkService(linkRepo)
+	linkHandler := handler.NewLinkHandler(linkService)
 
+	r := router.New(linkHandler)
+
+	log.Println("Server läuft auf :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
