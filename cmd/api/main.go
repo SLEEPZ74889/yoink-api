@@ -1,30 +1,35 @@
 package main
 
 import (
+	"context"
+	_ "embed"
 	"fmt"
 	"log"
 	"net/http"
-	"context"
 
-	"github.com/SLEEPZ74889/yoink-api/internal/router"
 	"github.com/SLEEPZ74889/yoink-api/internal/db"
+	"github.com/SLEEPZ74889/yoink-api/internal/router"
 	"github.com/joho/godotenv"
 )
 
+//go:embed assets/banner.txt
+var banner string
+
 func main() {
+	fmt.Println(banner)
+
 	if err := godotenv.Load(); err != nil {
-		log.Println("Keine .env Datei gefunden")
+		log.Println("No .env file found")
 	}
 
 	conn, err := db.ConnectDB()
 	if err != nil {
-		log.Fatalf("Fehler beim Verbinden zur Datenbank: %v", err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer conn.Close(context.Background())
-	fmt.Println("Erfolgreich mit der Datenbank verbunden")
+	fmt.Println("Successfully connected to the database")
 
 	r := router.New()
 
-	log.Println("Server läuft auf :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
