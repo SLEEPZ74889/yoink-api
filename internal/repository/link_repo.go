@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/SLEEPZ74889/yoink-api/internal/model"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type LinkRepository struct {
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewLinkRepository(db *pgx.Conn) *LinkRepository {
+func NewLinkRepository(db *pgxpool.Pool) *LinkRepository {
 	return &LinkRepository{db: db}
 }
 

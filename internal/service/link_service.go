@@ -8,15 +8,26 @@ import (
 	"strings"
 
 	"github.com/SLEEPZ74889/yoink-api/internal/model"
-	"github.com/SLEEPZ74889/yoink-api/internal/repository"
 )
 
-type LinkService struct {
-	repo *repository.LinkRepository
+// Interfaces — der Service hängt von diesen ab, nicht von konkreten Typen.
+// Das ermöglicht Mocks in Tests.
+type LinkRepo interface {
+	Create(ctx context.Context, link *model.Link) error
+	FindBySlug(ctx context.Context, slug string) (*model.Link, error)
 }
 
-func NewLinkService(repo *repository.LinkRepository) *LinkService {
-	return &LinkService{repo: repo}
+type ClickRepo interface {
+	Create(ctx context.Context, click *model.Click) error
+}
+
+type LinkService struct {
+	links  LinkRepo
+	clicks ClickRepo
+}
+
+func NewLinkService(links LinkRepo, clicks ClickRepo) *LinkService {
+	return &LinkService{links: links, clicks: clicks}
 }
 
 func (s *LinkService) CreateLink(ctx context.Context, req *model.CreateLinkRequest) (*model.Link, error) {
@@ -40,7 +51,7 @@ func (s *LinkService) CreateLink(ctx context.Context, req *model.CreateLinkReque
 		Active:      true,
 	}
 
-	if err := s.repo.Create(ctx, link); err != nil {
+	if err := s.links.Create(ctx, link); err != nil {
 		return nil, fmt.Errorf("service.CreateLink: %w", err)
 	}
 
@@ -48,9 +59,9 @@ func (s *LinkService) CreateLink(ctx context.Context, req *model.CreateLinkReque
 }
 
 func (s *LinkService) GetLinkBySlug(ctx context.Context, slug string) (*model.Link, error) {
-	link, err := s.repo.FindBySlug(ctx, slug)
+	link, err := s.links.FindBySlug(ctx, slug)
 	if err != nil {
-		return nil, fmt.Errorf("service.GetLinkBySlug: %w", err)
+		return nil, fmt.Errorf("link nicht gefunden")
 	}
 
 	if !link.Active {
@@ -58,6 +69,19 @@ func (s *LinkService) GetLinkBySlug(ctx context.Context, slug string) (*model.Li
 	}
 
 	return link, nil
+}
+
+// TrackClick speichert einen Klick asynchron — wird vom Handler per goroutine aufgerufen.
+func (s *LinkService) TrackClick(ctx context.Context, linkID, referrer, browser, os, device, ipHash string) {
+	click := &model.Click{
+		LinkID:   linkID,
+		Referrer: referrer,
+		Browser:  browser,
+		OS:       os,
+		Device:   device,
+		IPHash:   ipHash,
+	}
+	s.clicks.Create(ctx, click)
 }
 
 func generateSlug(n int) string {

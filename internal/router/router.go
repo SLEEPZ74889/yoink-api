@@ -14,6 +14,7 @@ func New(linkHandler *handler.LinkHandler) *chi.Mux {
 
 	r.Get("/health", handler.HealthHandler)
 	r.Post("/links", linkHandler.Create)
+	r.Get("/{slug}", linkHandler.Redirect)
 
 	return r
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"log"
@@ -25,15 +24,16 @@ func main() {
 		log.Println("No .env file found")
 	}
 
-	conn, err := db.ConnectDB()
+	pool, err := db.ConnectDB()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer conn.Close(context.Background())
+	defer pool.Close()
 	fmt.Println("Successfully connected to the database")
 
-	linkRepo := repository.NewLinkRepository(conn)
-	linkService := service.NewLinkService(linkRepo)
+	linkRepo := repository.NewLinkRepository(pool)
+	clickRepo := repository.NewClickRepository(pool)
+	linkService := service.NewLinkService(linkRepo, clickRepo)
 	linkHandler := handler.NewLinkHandler(linkService)
 
 	r := router.New(linkHandler)
