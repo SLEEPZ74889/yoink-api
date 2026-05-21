@@ -1,4 +1,7 @@
-.PHONY: run build test migrate
+include .env
+export
+
+.PHONY: run build test migrate fmt
 
 # Server starten
 run:
@@ -15,3 +18,7 @@ test:
 # Code formatieren
 fmt:
 	go fmt ./...
+
+# Datenbankmigration ausführen
+migrate:
+	psql "$(DATABASE_URL)" -f internal/db/migrations/001_init.sql
