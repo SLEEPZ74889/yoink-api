@@ -7,62 +7,80 @@
 
 A fast, minimal URL shortener with real-time analytics — built with Go, Chi, and PostgreSQL.
 
+Every click is tracked: browser, OS, device type, referrer, and a privacy-safe IP hash. No bloat, no framework magic. Just clean layered architecture and raw SQL.
+
 ---
 
-## What it does
+## Endpoints
 
-- Shortens any URL to a clean slug (e.g. `yoink.link/x7k2mq`)
-- Tracks every click: device, browser, OS, country, city, referrer
-- Custom slugs supported
-- Links can expire or be deactivated
+```
+GET  /health       — health check
+POST /links        — create a short link
+GET  /{slug}       — redirect + track click
+```
+
+### Create a link
+
+```bash
+curl -X POST http://localhost:8080/links \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "slug": "myslug", "title": "Example"}'
+```
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "slug": "myslug",
+  "short_url": "https://yoink.link/myslug",
+  "original_url": "https://example.com",
+  "created_at": "2026-05-20T14:00:00Z"
+}
+```
+
+`slug` and `title` are optional. If no slug is provided, a random 6-character one is generated.
+
+---
 
 ## Stack
 
-- **Go** — fast, no bloat
+- **Go** — no framework, no magic
 - **Chi** — lightweight HTTP router
-- **PostgreSQL (Neon)** — serverless, scales to zero
-- **pgx/v5** — native Go Postgres driver
+- **PostgreSQL (Neon)** — serverless postgres
+- **pgx/v5** — native Go postgres driver with connection pooling
 
 ## Architecture
-
-Clean layered architecture following enterprise patterns:
 
 ```
 handler  →  service  →  repository  →  database
 ```
 
-Each layer has one job. No god objects, no spaghetti.
+- **handler** — reads HTTP requests, writes HTTP responses
+- **service** — business logic, validation, slug generation
+- **repository** — SQL queries, nothing else
+- **model** — shared data structures
 
-## API
+Layers communicate through interfaces, which keeps each layer testable in isolation.
 
-```bash
-# Health check
-GET /health
-
-# Create a short link
-POST /links
-{
-  "url": "https://example.com",
-  "slug": "myslug",   # optional
-  "title": "My Link"  # optional
-}
-```
+---
 
 ## Getting started
 
 ```bash
-# Clone & run
 git clone https://github.com/SLEEPZ74889/yoink-api
 cd yoink-api
 
-# Add your Postgres connection string
-echo 'DATABASE_URL=your_connection_string' > .env
+cp .env.example .env
+# add your Postgres connection string to .env
 
-# Run migrations
-make migrate
-
-# Start the server
-make run
+make migrate   # run DB migrations
+make run       # start server on :8080
 ```
 
-Server runs on `:8080`.
+## Development
+
+```bash
+make test    # run all tests
+make build   # build binary → bin/yoink
+make fmt     # format code
+make tidy    # go mod tidy
+```
